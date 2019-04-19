@@ -18,7 +18,7 @@ class SelfJsonLoader(object):
 class ForeignExchange(SelfJsonLoader):
     @classmethod
     def columns(cls):
-        return ['title', 'bank', 'date', 'bank_sell', 'bank_buy']
+        return ['title', 'bank', 'date', 'bank_sell', 'bank_buy', 'discount']
 
     @staticmethod
     def sort(fe_paths, attr, reverse=False):
@@ -33,6 +33,12 @@ class ForeignExchange(SelfJsonLoader):
         self.date = next(iterator)
         self.bank_sell = next(iterator)
         self.bank_buy = next(iterator)
+        discount = next(iterator)
+        if isinstance(discount, float):
+            self.bank_sell -= discount
+            self.bank_buy += discount
+        if self.bank_sell < self.bank_buy:
+            raise ValueError
 
     @property
     def diff(self):
@@ -70,9 +76,9 @@ class TelegraphicTransfer(SelfJsonLoader):
 
     def get_commission(self, ntd):
         commission = ntd * self.commission_rate
-        if self.commission_min:
+        if isinstance(self.commission_min, int):
             commission = max(commission, self.commission_min)
-        if self.commission_max:
+        if isinstance(self.commission_max, int):  # 允許 max < min 時作用
             commission = min(commission, self.commission_max)
         return commission
 
